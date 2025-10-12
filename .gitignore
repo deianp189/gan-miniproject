@@ -1,0 +1,30 @@
+"
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Env
+.venv/
+env/
+venv/
+
+# Data & artifacts
+data/
+datasets/
+checkpoints/
+samples/
+*.pt
+*.pth
+*.onnx
+*.ckpt
+
+# Notebooks/cache
+.ipynb_checkpoints/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+"@ | Out-File -Encoding UTF8 .gitignore
