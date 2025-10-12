@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-# Vanilla GAN (MNIST) "paper-faithful-ish"
-# - G/D: MLP como en los experimentos básicos del paper
-# - Pérdida: BCE con logits; G usa variante no-saturante (max log D(G(z)))
-# - Opt: por defecto SGD + momentum (para parecerse al entorno clásico),
-#        con opción --opt adam para algo más estable.
-# - Guardado de muestras/checkpoints y seeds fijos.
+# Vanilla GAN (MNIST)
 
 import argparse, os, math, random
 import numpy as np
@@ -12,9 +7,8 @@ import torch, torch.nn as nn, torch.optim as optim
 from torchvision import datasets, transforms, utils
 from torch.utils.data import DataLoader
 
-# ---------------------------
-# Utils
-# ---------------------------
+# Utils or something idk
+
 def seed_all(seed=42):
     random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
@@ -23,11 +17,11 @@ def seed_all(seed=42):
 def ensure_dir(p):
     os.makedirs(p, exist_ok=True)
 
-# ---------------------------
-# Modelos
-# ---------------------------
+
+# Models
+
 class Generator(nn.Module):
-    # Latent z -> 784 con Tanh
+    # Latent z -> 784 with Tanh (I don't fucking know what Tanh is)
     def __init__(self, z_dim=100, img_dim=28*28):
         super().__init__()
         self.net = nn.Sequential(
@@ -53,15 +47,15 @@ class Discriminator(nn.Module):
         x = x.view(x.size(0), -1)
         return self.net(x)
 
-# ---------------------------
-# Entrenamiento
-# ---------------------------
+
+# Training
+
 def train(args):
     seed_all(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
     print(f"Device: {device}")
 
-    # Data: [0,1] -> Normalize a [-1,1] para casar con Tanh
+    # Data: [0,1] -> Normalize to [-1,1] in order to work with Tanh
     tfm = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
@@ -69,13 +63,13 @@ def train(args):
     ds = datasets.MNIST(root="./data", train=True, download=True, transform=tfm)
     dl = DataLoader(ds, batch_size=args.batch, shuffle=True, drop_last=True, num_workers=2)
 
-    # Modelos
+    # More models or something idk
     z_dim = args.zdim
     img_dim = 28*28
     G = Generator(z_dim, img_dim).to(device)
     D = Discriminator(img_dim).to(device)
 
-    # Optimizadores (elige "paper-like" SGD o "stable" Adam)
+    # Optimization (paper-like SGD or "stable" Adam)
     if args.opt.lower() == "sgd":
         optG = optim.SGD(G.parameters(), lr=args.lrG, momentum=args.momentum, nesterov=False)
         optD = optim.SGD(D.parameters(), lr=args.lrD, momentum=args.momentum, nesterov=False)
@@ -83,14 +77,14 @@ def train(args):
         optG = optim.Adam(G.parameters(), lr=args.lrG, betas=(0.5, 0.999))
         optD = optim.Adam(D.parameters(), lr=args.lrD, betas=(0.5, 0.999))
     else:
-        raise ValueError("--opt debe ser 'sgd' o 'adam'")
+        raise ValueError("--opt must be 'sgd' o 'adam'")
 
     bce = nn.BCEWithLogitsLoss()
 
-    # Carpeta de outputs
+    # outputs
     ensure_dir("samples"); ensure_dir("checkpoints")
 
-    # Fixed noise para seguimiento
+    # Fixed noise for tracking
     z_fixed = torch.randn(64, z_dim, device=device)
 
     global_step = 0
@@ -99,19 +93,17 @@ def train(args):
             xb = xb.to(device)  # [-1,1]
             m = xb.size(0)
 
-            # -----------------
-            # k pasos Discriminador (normalmente k=1)
-            # -----------------
+            # k steps Discriminator (normally k=1)
             for _ in range(args.k_steps_d):
                 z = torch.randn(m, z_dim, device=device)
-                fake = G(z).detach()  # no actualizar G aquí
+                fake = G(z).detach()  # do not update G here
 
-                # D(x): reales ~ 1 (label smoothing opcional 0.9)
+                # D(x): real ~ 1 (label smoothing opcional 0.9)
                 logits_real = D(xb)
                 y_real = torch.full((m,1), args.real_label, device=device)
                 loss_real = bce(logits_real, y_real)
 
-                # D(G(z)): falsas ~ 0
+                # D(G(z)): fake ~ 0
                 logits_fake = D(fake)
                 y_fake = torch.zeros(m,1, device=device)
                 loss_fake = bce(logits_fake, y_fake)
@@ -119,19 +111,17 @@ def train(args):
                 lossD = loss_real + loss_fake
                 optD.zero_grad(); lossD.backward(); optD.step()
 
-            # -----------------
-            # 1 paso Generador (NO-saturante: maximize log D(G(z)))
-            # -----------------
+            # 1 step Generator (non-saturating: maximize log D(G(z)))
             z = torch.randn(m, z_dim, device=device)
             fake = G(z)
             logits_fake = D(fake)
-            # objetivo de G: que D diga "real" (1)
+            # goal of G is to have D(fake) ~ 1
             y_gen = torch.ones(m,1, device=device)
             lossG = bce(logits_fake, y_gen)
 
             optG.zero_grad(); lossG.backward(); optG.step()
 
-            # Logging y samples
+            # Logging amd samples
             if global_step % args.save_every == 0:
                 G.eval()
                 with torch.no_grad():
@@ -147,16 +137,14 @@ def train(args):
 
             global_step += 1
 
-        # checkpoint por época
+        # checkpoint per epoch
         torch.save(G.state_dict(), f"checkpoints/G_epoch_{epoch}.pt")
         torch.save(D.state_dict(), f"checkpoints/D_epoch_{epoch}.pt")
         print(f"Saved checkpoints for epoch {epoch}")
 
     print("Done.")
 
-# ---------------------------
-# CLI
-# ---------------------------
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Vanilla GAN MNIST (paper-like)")
     ap.add_argument("--epochs", type=int, default=20)
@@ -164,7 +152,7 @@ if __name__ == "__main__":
     ap.add_argument("--zdim", type=int, default=100)
     ap.add_argument("--k-steps-d", type=int, default=1)
     ap.add_argument("--opt", type=str, default="sgd", choices=["sgd","adam"])
-    ap.add_argument("--lrG", type=float, default=2e-3)  # algo más bajo para G con SGD
+    ap.add_argument("--lrG", type=float, default=2e-3)
     ap.add_argument("--lrD", type=float, default=2e-3)
     ap.add_argument("--momentum", type=float, default=0.5)
     ap.add_argument("--real-label", type=float, default=0.9, help="label smoothing para reales")
