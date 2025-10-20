@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-ds = datasets.MNIST(root='./data', train=True, download=False,
+ds = datasets.MNIST(root='./data', train=True, download=True,
                     transform=transforms.ToTensor())
 dl = DataLoader(ds, batch_size=64, shuffle=True, drop_last=True)
 xb, yb = next(iter(dl))

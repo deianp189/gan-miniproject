@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 # Vanilla GAN (MNIST)
 
-import argparse, os, math, random
+import argparse, os, math, random, time
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch, torch.nn as nn, torch.optim as optim
+
+from adabelief_pytorch import AdaBelief
+from lion_pytorch import Lion
 from torchvision import datasets, transforms, utils
 from torch.utils.data import DataLoader
 
@@ -61,7 +66,7 @@ def train(args):
         transforms.Normalize((0.5,), (0.5,))
     ])
     ds = datasets.MNIST(root="./data", train=True, download=True, transform=tfm)
-    dl = DataLoader(ds, batch_size=args.batch, shuffle=True, drop_last=True, num_workers=2)
+    dl = DataLoader(ds, batch_size=args.batch, shuffle=True, drop_last=True, num_workers=6, pin_memory = True, prefetch_factor = 2)
 
     # More models or something idk
     z_dim = args.zdim
@@ -69,15 +74,23 @@ def train(args):
     G = Generator(z_dim, img_dim).to(device)
     D = Discriminator(img_dim).to(device)
 
+    betas = args.betas
+
     # Optimization (paper-like SGD or "stable" Adam)
     if args.opt.lower() == "sgd":
         optG = optim.SGD(G.parameters(), lr=args.lrG, momentum=args.momentum, nesterov=False)
         optD = optim.SGD(D.parameters(), lr=args.lrD, momentum=args.momentum, nesterov=False)
     elif args.opt.lower() == "adam":
-        optG = optim.Adam(G.parameters(), lr=args.lrG, betas=(0.5, 0.999))
-        optD = optim.Adam(D.parameters(), lr=args.lrD, betas=(0.5, 0.999))
+        optG = optim.Adam(G.parameters(), lr=args.lrG, betas=betas)
+        optD = optim.Adam(D.parameters(), lr=args.lrD, betas=betas)
+    elif args.opt.lower() == "adabelief":
+        optG = AdaBelief(G.parameters(), lr=args.lrG, betas=betas, eps=1e-16, weight_decay=1e-4)
+        optD = AdaBelief(D.parameters(), lr=args.lrD, betas=betas, eps=1e-16, weight_decay=1e-4)
+    elif args.opt.lower() == "lion":
+        optG = Lion(G.parameters(), lr=args.lrG, betas=betas, weight_decay=1e-4)
+        optD = Lion(D.parameters(), lr=args.lrD, betas=betas, weight_decay=1e-4)
     else:
-        raise ValueError("--opt must be 'sgd' o 'adam'")
+        raise ValueError("--opt must be 'sgd', 'adam', 'adabelief' or 'lion'")
 
     bce = nn.BCEWithLogitsLoss()
 
@@ -87,8 +100,13 @@ def train(args):
     # Fixed noise for tracking
     z_fixed = torch.randn(64, z_dim, device=device)
 
+    losses_D = []
+    losses_G = []
     global_step = 0
+
+    print(f"Running with args: {args}")
     for epoch in range(1, args.epochs+1):
+        start_time = time.time()
         for xb, _ in dl:
             xb = xb.to(device)  # [-1,1]
             m = xb.size(0)
@@ -121,7 +139,10 @@ def train(args):
 
             optG.zero_grad(); lossG.backward(); optG.step()
 
-            # Logging amd samples
+            losses_D.append(lossD.item())
+            losses_G.append(lossG.item())
+
+            # Logging and samples
             if global_step % args.save_every == 0:
                 G.eval()
                 with torch.no_grad():
@@ -140,7 +161,54 @@ def train(args):
         # checkpoint per epoch
         torch.save(G.state_dict(), f"checkpoints/G_epoch_{epoch}.pt")
         torch.save(D.state_dict(), f"checkpoints/D_epoch_{epoch}.pt")
-        print(f"Saved checkpoints for epoch {epoch}")
+        print(f"Saved checkpoints for epoch {epoch} (took {time.time() - start_time:.1f} s)")
+        #print(f"\n Args: Batch {args.batch} | zdim {args.zdim} | opt {args.opt} | k-steps-d {args.k_steps_d} | lr G/D {args.lrG}/{args.lrD}")
+        #print(f"\n momentum {args.momentum}") if args.opt=="sgd" else None
+
+    G.eval()
+    with torch.no_grad():
+        grid = utils.make_grid(
+            G(z_fixed).view(-1,1,28,28),
+            nrow=8, normalize=True, value_range=(-1,1)
+        )
+        params_str = "_".join(f"{k}{v}" for k, v in {
+            'e': args.epochs,
+            'b': args.batch,
+            'z': args.zdim,
+            'k': args.k_steps_d,
+            'O': args.opt.lower(),
+            'lrG': args.lrG,
+            'lrD': args.lrD,
+            'l': args.real_label,
+            'm': args.momentum if args.opt.lower() == "sgd" else None,
+            'be': f"{args.betas[0]}-{args.betas[1]}" if args.opt.lower() == "adam" else None,
+            'S': args.seed
+        }.items() if v is not None)
+
+        opt_path = args.opt.lower()
+        sub_dir = args.save_loc.lower()
+
+        image_path = os.path.join("results", opt_path, "samples", sub_dir, f"{params_str}.png")
+        plot_path = os.path.join("results", opt_path, "plots", sub_dir, f"{params_str}.pdf")
+
+        ensure_dir(os.path.dirname(image_path))
+        ensure_dir(os.path.dirname(plot_path))
+        
+        utils.save_image(grid, image_path)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(losses_D, label = "Loss D", alpha = 0.7, linewidth = 1.5, linestyle = '-')
+        plt.plot(losses_G, label = "Loss G", alpha = 0.7, linewidth = 1.5, linestyle = '--')
+        plt.xlabel("Iterations")
+        plt.ylabel("Loss")
+        plt.title(f"Losses - {params_str}")
+        plt.legend()
+        plt.grid(True, alpha = 0.3)
+        plt.tight_layout()
+        plt.savefig(plot_path, dpi = 150)
+        plt.close()
+
+        print(f"Sample image saved to {image_path}\nLoss plot saved to {plot_path}")
 
     print("Done.")
 
@@ -151,13 +219,15 @@ if __name__ == "__main__":
     ap.add_argument("--batch", type=int, default=128)
     ap.add_argument("--zdim", type=int, default=100)
     ap.add_argument("--k-steps-d", type=int, default=1)
-    ap.add_argument("--opt", type=str, default="sgd", choices=["sgd","adam"])
+    ap.add_argument("--opt", type=str, default="sgd", choices=["sgd","adam", "adabelief", "lion"])
     ap.add_argument("--lrG", type=float, default=2e-3)
     ap.add_argument("--lrD", type=float, default=2e-3)
     ap.add_argument("--momentum", type=float, default=0.5)
+    ap.add_argument("--betas", nargs=2, type=float, default=(0.5, 0.999), help="Betas for Adam: beta1 beta2")
     ap.add_argument("--real-label", type=float, default=0.9, help="label smoothing para reales")
     ap.add_argument("--save-every", type=int, default=200)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--save-loc", type=str, default="./results")
     args = ap.parse_args()
     train(args)
