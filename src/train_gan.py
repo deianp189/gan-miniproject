@@ -26,7 +26,7 @@ def ensure_dir(p):
 # Models
 
 class Generator(nn.Module):
-    # Latent z -> 784 with Tanh (I don't fucking know what Tanh is)
+    # Latent z -> 784 with Tanh
     def __init__(self, z_dim=100, img_dim=28*28):
         super().__init__()
         self.net = nn.Sequential(
