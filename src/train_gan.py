@@ -128,6 +128,17 @@ def get_dataset(args):
         ds = datasets.CIFAR10(root="./data", train=True, download=True, transform=tfm)
         img_dim = 32 * 32 * 3
         channels = 3
+
+    elif args.dataset.lower() == "celeba":
+        tfm = transforms.Compose([
+            transforms.Resize(64),
+            transforms.CenterCrop(64),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ])
+        ds = datasets.CelebA(root="./data", split='train', download=True, transform=tfm)
+        img_dim = 64 * 64 * 3
+        channels = 3
     
     return ds, img_dim, channels
 
@@ -190,6 +201,8 @@ def train(args):
         img_shape = (-1, 1, 28, 28)
     elif args.dataset.lower() == "cifar10":
         img_shape = (-1, 3, 32, 32)
+    elif args.dataset.lower() == "celeba":
+        img_shape = (-1, 3, 64, 64)
 
     losses_D = []
     losses_G = []
@@ -363,23 +376,47 @@ def train(args):
 
 def apply_preset(args):
     p = (args.preset or "baseline").lower()
+    
+    # Adjust default hidden sizes based on dataset complexity
+    if args.dataset.lower() == "mnist":
+        base_g = [256, 512, 1024]
+        base_d = [512, 256]
+    elif args.dataset.lower() == "cifar10":
+        base_g = [512, 1024, 2048]
+        base_d = [1024, 512, 256]
+    elif args.dataset.lower() == "celeba":
+        # CelebA needs more capacity (64x64x3 = 12,288 dims)
+        base_g = [1024, 2048, 4096]
+        base_d = [2048, 1024, 512]
+    else:
+        base_g = [256, 512, 1024]
+        base_d = [512, 256]
+    
     if p == "baseline":
-        if args.g_hidden is None: args.g_hidden = "256,512,1024"
-        if args.d_hidden is None: args.d_hidden = "512,256"
+        if args.g_hidden is None: args.g_hidden = ",".join(map(str, base_g))
+        if args.d_hidden is None: args.d_hidden = ",".join(map(str, base_d))
         if args.g_act is None:    args.g_act = "relu"
         if args.d_act is None:    args.d_act = "lrelu"
         if args.k_steps_g is None: args.k_steps_g = 1
+        
     elif p == "strongerg":
-        if args.g_hidden is None: args.g_hidden = "512,1024,1024"
-        if args.d_hidden is None: args.d_hidden = "512,256"
+        # Scale up from base
+        if args.g_hidden is None: 
+            args.g_hidden = ",".join(map(str, [b*2 for b in base_g[:-1]] + [base_g[-1]]))
+        if args.d_hidden is None: 
+            args.d_hidden = ",".join(map(str, base_d))
         if args.g_act is None:    args.g_act = "silu"
         if args.d_act is None:    args.d_act = "lrelu"
         if args.k_steps_g is None: args.k_steps_g = 2   # 2 pasos G/iter
         if args.lrG == 2e-3 and args.lrD == 2e-3:
             args.lrG, args.lrD = 2e-3, 1e-3
+            
     elif p == "strongerd":
-        if args.g_hidden is None: args.g_hidden = "256,256,512"
-        if args.d_hidden is None: args.d_hidden = "1024,512,256"
+        # Scale down G, scale up D
+        if args.g_hidden is None: 
+            args.g_hidden = ",".join(map(str, [base_g[0]//2, base_g[0]//2, base_g[1]//2]))
+        if args.d_hidden is None: 
+            args.d_hidden = ",".join(map(str, [b*2 for b in base_d] + [base_d[-1]]))
         if args.g_act is None:    args.g_act = "relu"
         if args.d_act is None:    args.d_act = "lrelu"
         if args.k_steps_g is None: args.k_steps_g = 1
@@ -394,7 +431,7 @@ def apply_preset(args):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Vanilla GAN MNIST (paper-like)")
     # training
-    ap.add_argument("--dataset", type=str, default="mnist", choices=["mnist", "cifar10"])
+    ap.add_argument("--dataset", type=str, default="mnist", choices=["mnist", "cifar10", "celeba"])
     ap.add_argument("--epochs", type=int, default=20)
     ap.add_argument("--batch", type=int, default=128)
     ap.add_argument("--zdim", type=int, default=100)
