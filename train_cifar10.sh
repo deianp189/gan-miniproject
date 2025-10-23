@@ -7,19 +7,15 @@
 #SBATCH --output=logs/gan_cifar10_%j.out
 #SBATCH --error=logs/gan_cifar10_%j.err
 
-# Create necessary directories using $HOME instead of ~
 mkdir -p $HOME/gan-miniproject/logs
 mkdir -p $HOME/gan-miniproject/src/samples
 mkdir -p $HOME/gan-miniproject/src/checkpoints
 mkdir -p $HOME/gan-miniproject/src/data
 
-# Navigate to your project directory
 cd $HOME/gan-miniproject
 
-# Activate virtual environment
 source venv/bin/activate
 
-# Go to src directory
 cd src
 
 echo "Starting CIFAR-10 GAN Training..."
@@ -30,7 +26,6 @@ echo "PyTorch version: $(python3 -c 'import torch; print(torch.__version__)')"
 echo "CUDA available: $(python3 -c 'import torch; print(torch.cuda.is_available())')"
 date
 
-# Run training
 python3 train_gan.py \
     --dataset cifar10 \
     --epochs 50 \
