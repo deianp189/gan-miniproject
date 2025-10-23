@@ -239,7 +239,7 @@ def train(args):
                 G.eval()
                 with torch.no_grad():
                     grid = utils.make_grid(
-                        G(z_fixed).view(*img_shape),  # <-- CHANGED THIS LINE
+                        G(z_fixed).view(*img_shape),
                         nrow=8, normalize=True, value_range=(-1,1)
                     )
                     out_path = f"samples/step_{global_step:06d}.png"
@@ -282,18 +282,21 @@ def train(args):
         }.items() if v is not None)
 
 
+        # Get project root directory (parent of src/)
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         opt_path = args.opt.lower()
-	sub_dir = args.save_loc.lower()
+        sub_dir = args.save_loc.lower()
 
-# Get project root directory (parent of src/)
-	project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-	image_path = os.path.join(project_root, "results", opt_path, "samples", sub_dir, f"{params_str}.png")
-	plot_path = os.path.join(project_root, "results", opt_path, "plots", sub_dir, f"{params_str}.pdf")
+        # Create a results folder with both sample and plot together
+        results_dir = os.path.join(project_root, "results", opt_path, sub_dir, params_str)
+        ensure_dir(results_dir)
 
-	ensure_dir(os.path.dirname(image_path))
-	ensure_dir(os.path.dirname(plot_path))
-        
+        # Save final sample image
+        image_path = os.path.join(results_dir, "final_sample.png")
         utils.save_image(grid, image_path)
+
+        # Save plot in the same folder
+        plot_path = os.path.join(results_dir, "loss_plot.pdf")
 
         #plt.figure(figsize=(10, 5))
         #plt.plot(losses_D, label = "Loss D", alpha = 0.7, linewidth = 1.5, linestyle = '-')

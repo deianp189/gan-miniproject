@@ -23,7 +23,6 @@ samples/
 !results/
 !results/**/*.png
 !results/**/*.pdf
-!results/**/*.jpg
 
 # Notebooks/cache
 .ipynb_checkpoints/
