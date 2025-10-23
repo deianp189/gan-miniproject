@@ -283,13 +283,15 @@ def train(args):
 
 
         opt_path = args.opt.lower()
-        sub_dir = args.save_loc.lower()
+	sub_dir = args.save_loc.lower()
 
-        image_path = os.path.join("results", opt_path, "samples", sub_dir, f"{params_str}.png")
-        plot_path = os.path.join("results", opt_path, "plots", sub_dir, f"{params_str}.pdf")
+# Get project root directory (parent of src/)
+	project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	image_path = os.path.join(project_root, "results", opt_path, "samples", sub_dir, f"{params_str}.png")
+	plot_path = os.path.join(project_root, "results", opt_path, "plots", sub_dir, f"{params_str}.pdf")
 
-        ensure_dir(os.path.dirname(image_path))
-        ensure_dir(os.path.dirname(plot_path))
+	ensure_dir(os.path.dirname(image_path))
+	ensure_dir(os.path.dirname(plot_path))
         
         utils.save_image(grid, image_path)
 
