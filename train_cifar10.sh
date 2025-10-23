@@ -12,7 +12,6 @@ mkdir -p $HOME/gan-miniproject/logs
 mkdir -p $HOME/gan-miniproject/src/samples
 mkdir -p $HOME/gan-miniproject/src/checkpoints
 mkdir -p $HOME/gan-miniproject/src/data
-mkdir -p $HOME/gan-miniproject/src/results
 
 # Navigate to your project directory
 cd $HOME/gan-miniproject
