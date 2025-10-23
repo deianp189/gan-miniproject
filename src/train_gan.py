@@ -283,12 +283,18 @@ def train(args):
 
 
         # Get project root directory (parent of src/)
+
+        # Create a shorter, cleaner folder name
+        dataset_name = args.dataset if hasattr(args, 'dataset') else 'mnist'
+        folder_name = f"{dataset_name}_e{args.epochs}_b{args.batch}_s{args.seed}"
+
+        # Get project root directory (parent of src/)
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         opt_path = args.opt.lower()
         sub_dir = args.save_loc.lower()
 
         # Create a results folder with both sample and plot together
-        results_dir = os.path.join(project_root, "results", opt_path, sub_dir, params_str)
+        results_dir = os.path.join(project_root, "results", opt_path, sub_dir, folder_name)
         ensure_dir(results_dir)
 
         # Save final sample image
