@@ -1,0 +1,143 @@
+Starting CIFAR-10 GAN Training...
+Job ID: 158017
+Node: ailab-l4-04
+Python: /ceph/home/student.aau.dk/wm00ik/gan-miniproject/venv/bin/python3
+PyTorch version: 2.9.0+cu128
+CUDA available: True
+Thu Oct 23 20:00:34 CEST 2025
+Device: cuda
+Running with args: Namespace(dataset='cifar10', epochs=50, batch=64, zdim=100, k_steps_d=1, k_steps_g=1, opt='adam', lrG=0.0002, lrD=0.0002, momentum=0.5, betas=(0.5, 0.999), real_label=0.9, save_every=500, seed=42, cpu=False, save_loc='default', preset='baseline', g_hidden='512,1024,2048', d_hidden='1024,512,256', g_act='relu', d_act='lrelu', g_bn=False, d_bn=False, d_dropout=0.0)
+[ep 01 | step 0] lossD=1.926 lossG=4.630 -> samples/step_000000.png
+[ep 01 | step 500] lossD=0.657 lossG=3.281 -> samples/step_000500.png
+Saved checkpoints for epoch 1 (took 15.1 s)
+[ep 02 | step 1000] lossD=0.580 lossG=4.035 -> samples/step_001000.png
+[ep 02 | step 1500] lossD=1.053 lossG=2.118 -> samples/step_001500.png
+Saved checkpoints for epoch 2 (took 8.1 s)
+[ep 03 | step 2000] lossD=1.289 lossG=2.232 -> samples/step_002000.png
+Saved checkpoints for epoch 3 (took 8.1 s)
+[ep 04 | step 2500] lossD=1.173 lossG=2.250 -> samples/step_002500.png
+[ep 04 | step 3000] lossD=1.194 lossG=1.857 -> samples/step_003000.png
+Saved checkpoints for epoch 4 (took 9.6 s)
+[ep 05 | step 3500] lossD=1.149 lossG=1.726 -> samples/step_003500.png
+Saved checkpoints for epoch 5 (took 9.3 s)
+[ep 06 | step 4000] lossD=1.294 lossG=1.906 -> samples/step_004000.png
+[ep 06 | step 4500] lossD=1.241 lossG=1.592 -> samples/step_004500.png
+Saved checkpoints for epoch 6 (took 9.3 s)
+[ep 07 | step 5000] lossD=1.272 lossG=1.196 -> samples/step_005000.png
+Saved checkpoints for epoch 7 (took 8.4 s)
+[ep 08 | step 5500] lossD=1.414 lossG=1.398 -> samples/step_005500.png
+[ep 08 | step 6000] lossD=1.231 lossG=1.035 -> samples/step_006000.png
+Saved checkpoints for epoch 8 (took 7.9 s)
+[ep 09 | step 6500] lossD=1.274 lossG=1.187 -> samples/step_006500.png
+[ep 09 | step 7000] lossD=1.321 lossG=1.179 -> samples/step_007000.png
+Saved checkpoints for epoch 9 (took 9.0 s)
+[ep 10 | step 7500] lossD=1.252 lossG=1.208 -> samples/step_007500.png
+Saved checkpoints for epoch 10 (took 8.4 s)
+[ep 11 | step 8000] lossD=1.398 lossG=1.003 -> samples/step_008000.png
+[ep 11 | step 8500] lossD=1.326 lossG=0.956 -> samples/step_008500.png
+Saved checkpoints for epoch 11 (took 8.1 s)
+[ep 12 | step 9000] lossD=1.422 lossG=1.052 -> samples/step_009000.png
+Saved checkpoints for epoch 12 (took 8.1 s)
+[ep 13 | step 9500] lossD=1.429 lossG=0.906 -> samples/step_009500.png
+[ep 13 | step 10000] lossD=1.417 lossG=0.913 -> samples/step_010000.png
+Saved checkpoints for epoch 13 (took 8.8 s)
+[ep 14 | step 10500] lossD=1.399 lossG=0.931 -> samples/step_010500.png
+Saved checkpoints for epoch 14 (took 9.3 s)
+[ep 15 | step 11000] lossD=1.497 lossG=0.862 -> samples/step_011000.png
+[ep 15 | step 11500] lossD=1.331 lossG=0.867 -> samples/step_011500.png
+Saved checkpoints for epoch 15 (took 9.3 s)
+[ep 16 | step 12000] lossD=1.366 lossG=0.962 -> samples/step_012000.png
+Saved checkpoints for epoch 16 (took 7.9 s)
+[ep 17 | step 12500] lossD=1.415 lossG=0.771 -> samples/step_012500.png
+[ep 17 | step 13000] lossD=1.363 lossG=0.894 -> samples/step_013000.png
+Saved checkpoints for epoch 17 (took 9.1 s)
+[ep 18 | step 13500] lossD=1.393 lossG=0.937 -> samples/step_013500.png
+[ep 18 | step 14000] lossD=1.503 lossG=0.878 -> samples/step_014000.png
+Saved checkpoints for epoch 18 (took 8.1 s)
+[ep 19 | step 14500] lossD=1.430 lossG=0.842 -> samples/step_014500.png
+Saved checkpoints for epoch 19 (took 7.8 s)
+[ep 20 | step 15000] lossD=1.394 lossG=0.841 -> samples/step_015000.png
+[ep 20 | step 15500] lossD=1.311 lossG=0.941 -> samples/step_015500.png
+Saved checkpoints for epoch 20 (took 6.6 s)
+[ep 21 | step 16000] lossD=1.394 lossG=0.852 -> samples/step_016000.png
+Saved checkpoints for epoch 21 (took 7.8 s)
+[ep 22 | step 16500] lossD=1.380 lossG=0.772 -> samples/step_016500.png
+[ep 22 | step 17000] lossD=1.381 lossG=0.827 -> samples/step_017000.png
+Saved checkpoints for epoch 22 (took 7.2 s)
+[ep 23 | step 17500] lossD=1.389 lossG=0.845 -> samples/step_017500.png
+Saved checkpoints for epoch 23 (took 8.5 s)
+[ep 24 | step 18000] lossD=1.412 lossG=0.891 -> samples/step_018000.png
+[ep 24 | step 18500] lossD=1.378 lossG=0.865 -> samples/step_018500.png
+Saved checkpoints for epoch 24 (took 8.7 s)
+[ep 25 | step 19000] lossD=1.385 lossG=0.794 -> samples/step_019000.png
+[ep 25 | step 19500] lossD=1.372 lossG=0.839 -> samples/step_019500.png
+Saved checkpoints for epoch 25 (took 7.7 s)
+[ep 26 | step 20000] lossD=1.370 lossG=0.849 -> samples/step_020000.png
+Saved checkpoints for epoch 26 (took 9.0 s)
+[ep 27 | step 20500] lossD=1.363 lossG=0.813 -> samples/step_020500.png
+[ep 27 | step 21000] lossD=1.353 lossG=0.806 -> samples/step_021000.png
+Saved checkpoints for epoch 27 (took 8.4 s)
+[ep 28 | step 21500] lossD=1.356 lossG=0.823 -> samples/step_021500.png
+Saved checkpoints for epoch 28 (took 9.8 s)
+[ep 29 | step 22000] lossD=1.424 lossG=0.847 -> samples/step_022000.png
+[ep 29 | step 22500] lossD=1.367 lossG=0.856 -> samples/step_022500.png
+Saved checkpoints for epoch 29 (took 8.8 s)
+[ep 30 | step 23000] lossD=1.372 lossG=0.749 -> samples/step_023000.png
+Saved checkpoints for epoch 30 (took 8.0 s)
+[ep 31 | step 23500] lossD=1.380 lossG=0.767 -> samples/step_023500.png
+[ep 31 | step 24000] lossD=1.391 lossG=0.817 -> samples/step_024000.png
+Saved checkpoints for epoch 31 (took 7.3 s)
+[ep 32 | step 24500] lossD=1.382 lossG=0.874 -> samples/step_024500.png
+Saved checkpoints for epoch 32 (took 8.5 s)
+[ep 33 | step 25000] lossD=1.352 lossG=0.852 -> samples/step_025000.png
+[ep 33 | step 25500] lossD=1.350 lossG=0.827 -> samples/step_025500.png
+Saved checkpoints for epoch 33 (took 9.3 s)
+[ep 34 | step 26000] lossD=1.354 lossG=0.794 -> samples/step_026000.png
+[ep 34 | step 26500] lossD=1.341 lossG=0.863 -> samples/step_026500.png
+Saved checkpoints for epoch 34 (took 7.9 s)
+[ep 35 | step 27000] lossD=1.372 lossG=0.843 -> samples/step_027000.png
+Saved checkpoints for epoch 35 (took 9.2 s)
+[ep 36 | step 27500] lossD=1.375 lossG=0.853 -> samples/step_027500.png
+[ep 36 | step 28000] lossD=1.350 lossG=0.843 -> samples/step_028000.png
+Saved checkpoints for epoch 36 (took 7.2 s)
+[ep 37 | step 28500] lossD=1.382 lossG=0.790 -> samples/step_028500.png
+Saved checkpoints for epoch 37 (took 9.2 s)
+[ep 38 | step 29000] lossD=1.431 lossG=0.834 -> samples/step_029000.png
+[ep 38 | step 29500] lossD=1.402 lossG=0.809 -> samples/step_029500.png
+Saved checkpoints for epoch 38 (took 7.5 s)
+[ep 39 | step 30000] lossD=1.370 lossG=0.810 -> samples/step_030000.png
+Saved checkpoints for epoch 39 (took 8.2 s)
+[ep 40 | step 30500] lossD=1.399 lossG=0.814 -> samples/step_030500.png
+[ep 40 | step 31000] lossD=1.369 lossG=0.857 -> samples/step_031000.png
+Saved checkpoints for epoch 40 (took 8.3 s)
+[ep 41 | step 31500] lossD=1.358 lossG=0.797 -> samples/step_031500.png
+[ep 41 | step 32000] lossD=1.423 lossG=0.852 -> samples/step_032000.png
+Saved checkpoints for epoch 41 (took 9.0 s)
+[ep 42 | step 32500] lossD=1.330 lossG=0.938 -> samples/step_032500.png
+Saved checkpoints for epoch 42 (took 9.0 s)
+[ep 43 | step 33000] lossD=1.401 lossG=0.774 -> samples/step_033000.png
+[ep 43 | step 33500] lossD=1.400 lossG=0.928 -> samples/step_033500.png
+Saved checkpoints for epoch 43 (took 6.7 s)
+[ep 44 | step 34000] lossD=1.328 lossG=0.962 -> samples/step_034000.png
+Saved checkpoints for epoch 44 (took 8.9 s)
+[ep 45 | step 34500] lossD=1.387 lossG=0.876 -> samples/step_034500.png
+[ep 45 | step 35000] lossD=1.380 lossG=0.819 -> samples/step_035000.png
+Saved checkpoints for epoch 45 (took 9.3 s)
+[ep 46 | step 35500] lossD=1.365 lossG=0.823 -> samples/step_035500.png
+Saved checkpoints for epoch 46 (took 9.0 s)
+[ep 47 | step 36000] lossD=1.428 lossG=0.860 -> samples/step_036000.png
+[ep 47 | step 36500] lossD=1.390 lossG=0.904 -> samples/step_036500.png
+Saved checkpoints for epoch 47 (took 8.4 s)
+[ep 48 | step 37000] lossD=1.384 lossG=0.821 -> samples/step_037000.png
+Saved checkpoints for epoch 48 (took 9.1 s)
+[ep 49 | step 37500] lossD=1.352 lossG=0.949 -> samples/step_037500.png
+[ep 49 | step 38000] lossD=1.384 lossG=0.887 -> samples/step_038000.png
+Saved checkpoints for epoch 49 (took 7.1 s)
+[ep 50 | step 38500] lossD=1.352 lossG=0.837 -> samples/step_038500.png
+[ep 50 | step 39000] lossD=1.374 lossG=0.840 -> samples/step_039000.png
+Saved checkpoints for epoch 50 (took 6.1 s)
+Sample image saved to results/adam/samples/default/e50_b64_z100_kD1_kG1_Pbaseline_GArelu_DAlrelu_Oadam_lrG0.0002_lrD0.0002_l0.9_be0.5-0.999_S42.png
+Loss plot saved to results/adam/plots/default/e50_b64_z100_kD1_kG1_Pbaseline_GArelu_DAlrelu_Oadam_lrG0.0002_lrD0.0002_l0.9_be0.5-0.999_S42.pdf
+Done.
+Training completed successfully!
+Thu Oct 23 20:08:42 CEST 2025

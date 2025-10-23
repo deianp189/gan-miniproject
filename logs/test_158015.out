@@ -1,0 +1,17 @@
+Job started
+Job ID: 158015
+Node: ailab-l4-04
+Current directory: /ceph/home/student.aau.dk/wm00ik/gan-miniproject
+Home directory: /ceph/home/student.aau.dk/wm00ik
+Changed to: /ceph/home/student.aau.dk/wm00ik/gan-miniproject
+Venv activated
+Python location: /ceph/home/student.aau.dk/wm00ik/gan-miniproject/venv/bin/python3
+Python version: Python 3.10.12
+Now in: /ceph/home/student.aau.dk/wm00ik/gan-miniproject/src
+Files here: total 16
+drwxrwxr-x 2 wm00ik@student.aau.dk wm00ik@student.aau.dk     1 Oct 23 19:29 .
+drwxrwxr-x 8 wm00ik@student.aau.dk wm00ik@student.aau.dk    12 Oct 23 19:58 ..
+-rw-rw-r-- 1 wm00ik@student.aau.dk wm00ik@student.aau.dk 16242 Oct 23 19:29 train_gan.py
+PyTorch: 2.9.0+cu128
+CUDA available: True
+Test completed!
