@@ -1,4 +1,3 @@
-"
 # Python
 __pycache__/
 *.pyc
@@ -10,7 +9,7 @@ __pycache__/
 env/
 venv/
 
-# Data & artifacts
+# Data & large training artifacts
 data/
 datasets/
 checkpoints/
@@ -20,6 +19,12 @@ samples/
 *.onnx
 *.ckpt
 
+# Keep final results
+!results/
+!results/**/*.png
+!results/**/*.pdf
+!results/**/*.jpg
+
 # Notebooks/cache
 .ipynb_checkpoints/
 
@@ -27,4 +32,6 @@ samples/
 .DS_Store
 Thumbs.db
 .vscode/
-"@ | Out-File -Encoding UTF8 .gitignore
+
+# Logs
+logs/
