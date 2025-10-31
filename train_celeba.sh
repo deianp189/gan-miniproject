@@ -1,44 +1,39 @@
 #!/usr/bin/env bash
-
 #SBATCH --job-name=gan_celeba
+#SBATCH --partition=prioritized
 #SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --time=12:00:00
-#SBATCH --output=logs/gan_celeba_%j.out
-#SBATCH --error=logs/gan_celeba_%j.err
+#SBATCH --chdir=$HOME/gan-miniproject
+#SBATCH --output=$HOME/gan-miniproject/logs/gan_%x_%j.out
+#SBATCH --error=$HOME/gan-miniproject/logs/gan_%x_%j.err
 
-# Create necessary directories
-mkdir -p $HOME/gan-miniproject/logs
-mkdir -p $HOME/gan-miniproject/src/samples
-mkdir -p $HOME/gan-miniproject/src/checkpoints
-mkdir -p $HOME/gan-miniproject/src/data
+set -euo pipefail
+mkdir -p $HOME/gan-miniproject/logs $HOME/gan-miniproject/src/{samples,checkpoints,data}
+container="/home/container/pytorch/pytorch_25.04.sif"
 
-cd $HOME/gan-miniproject
+export PYTHONUNBUFFERED=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export TORCH_HOME="$HOME/.cache/torch"
+export XDG_CACHE_HOME="$HOME/.cache"
 
-source venv/bin/activate
-
-cd src
-
-echo "Starting CelebA GAN Training..."
-echo "Job ID: $SLURM_JOB_ID"
-echo "Node: $SLURMD_NODENAME"
-echo "Python: $(which python3)"
-echo "PyTorch version: $(python3 -c 'import torch; print(torch.__version__)')"
-echo "CUDA available: $(python3 -c 'import torch; print(torch.cuda.is_available())')"
-date
-
-# Run training - CelebA needs more capacity and longer training
-python3 train_gan.py \
+singularity exec --nv "$container" bash -lc '
+  cd src
+  python3 -c "import torch; print(\"Torch:\", torch.__version__, \"CUDA:\", torch.cuda.is_available())"
+  python3 train_gan.py \
     --dataset celeba \
+    --opt adam \
     --epochs 50 \
     --batch 64 \
-    --opt adam \
     --lrG 2e-4 \
     --lrD 2e-4 \
     --g-hidden 1024,2048,4096 \
     --d-hidden 2048,1024,512 \
     --save-every 500 \
+    --overwrite-samples \
+    --save-loc baseline \
     --seed 42
-
+'
 echo "Training completed successfully!"
-date
