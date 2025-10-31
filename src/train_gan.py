@@ -6,7 +6,7 @@ import argparse, os, math, random, time
 import matplotlib.pyplot as plt
 import numpy as np
 import torch, torch.nn as nn, torch.optim as optim
-import scipy.ndimage as ndi
+
 from adabelief_pytorch import AdaBelief
 from lion_pytorch import Lion
 from torchvision import datasets, transforms, utils
@@ -82,6 +82,15 @@ def init_weights(m, act_name="relu"):
         if m.bias is not None:
             nn.init.zeros_(m.bias)
 
+def init_weights_cnn(m):
+    if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
+        nn.init.normal_(m.weight, 0.0, 0.02)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, nn.BatchNorm2d):
+        nn.init.normal_(m.weight, 1.0, 0.02)
+        nn.init.zeros_(m.bias)
+    
 
 # Models
 class Generator(nn.Module):
@@ -109,6 +118,51 @@ class Generator(nn.Module):
 
     def forward(self, z):
         return self.net(z)
+    
+class GeneratorCNN(nn.Module):
+    def __init__(self, z_dim=100, img_channels=1, img_size=28, act="relu", use_bn=True):
+        super().__init__()
+
+        if img_size == 28: # MNIST
+            init_size = 7
+            self.init_channels = 256
+        elif img_size == 32: # CIFAR-10
+            init_size = 4
+            self.init_channels = 512
+        elif img_size == 64: # CelebA
+            init_size = 4
+            self.init_channels = 512
+
+        self.fc = nn.Linear(z_dim, self.init_channels * init_size * init_size)
+        self.init_size = init_size
+
+        layers = []
+        in_channels = self.init_channels
+
+        num_upsample = int(np.log2(img_size // init_size))
+
+        for i in range(num_upsample):
+            out_channels = in_channels // 2 if i < num_upsample - 1 else 64
+            layers += [nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1),]
+
+            if use_bn and i < num_upsample - 1:
+                layers += [nn.BatchNorm2d(out_channels)]
+
+            layers += [get_act(act)]
+            in_channels = out_channels
+
+        layers += [nn.Upsample(scale_factor=2, mode='nearest')]
+        layers += [nn.Conv2d(64, img_channels, kernel_size=3, padding=1), nn.Tanh()]
+
+        self.conv_blocks = nn.Sequential(*layers)
+
+        self.apply(init_weights_cnn)
+
+    def forward(self, z):
+        out = self.fc(z)
+        out = out.view(out.size(0), self.init_channels, self.init_size, self.init_size)
+
+        return self.conv_blocks(out)
 
 class Discriminator(nn.Module):
     def __init__(self, img_dim=28*28, hidden=(512,256),
@@ -149,6 +203,51 @@ class Discriminator(nn.Module):
         x = x.view(x.size(0), -1)
         return self.net(x)
 
+class DiscriminatorCNN(nn.Module):
+    def __init__(self, img_channels=1, img_size=28, act="lrelu", use_bn=False, dropout_p=0.0, spectral_norm_d=False):
+        super().__init__()
+
+        layers = []
+        in_channels = img_channels
+        base_channels = 64
+
+        num_downsample = int(np.log2(img_size)) - 2
+
+        for i in range(num_downsample):
+            out_channels = base_channels * (2 ** i)
+            conv = nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1)
+            if spectral_norm_d:
+                conv = spectral_norm(conv)
+
+            layers += [conv]
+
+            if use_bn and i > 0:
+                layers += [nn.BatchNorm2d(out_channels)]
+
+            layers += [get_act(act)]
+
+            if dropout_p > 0:
+                layers += [nn.Dropout2d(p=dropout_p)]
+
+            in_channels = out_channels
+
+        self.conv_blocks = nn.Sequential(*layers)
+
+        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+
+        final_linear = nn.Linear(out_channels, 1)
+        if spectral_norm_d:
+            final_linear = spectral_norm(final_linear)
+        self.fc = final_linear
+
+        self.apply(init_weights_cnn)
+
+    def forward(self, x):
+        out = self.conv_blocks(x)
+        out = self.pool(out)
+        out = out.view(out.size(0), -1)
+
+        return self.fc(out)
 
 # Training
 
@@ -197,18 +296,30 @@ def train(args):
     g_hidden = parse_hidden(args.g_hidden, [256,512,1024])
     d_hidden = parse_hidden(args.d_hidden, [512,256])
 
-    G = Generator(z_dim, img_dim,
-                hidden=g_hidden,
-                act=(args.g_act or "relu"),
-                use_bn=args.g_bn).to(device)
+    if args.dataset.lower() == "mnist":
+        img_size = 28
+    elif args.dataset.lower() == "cifar10":
+        img_size = 32
+    elif args.dataset.lower() == "celeba":
+        img_size = 64
 
-    D = Discriminator(img_dim,
-                hidden=d_hidden,
-                act=(args.d_act or "lrelu"),
-                use_bn=args.d_bn,
-                dropout_p=args.d_dropout,
-                spectral_norm_d=args.spectral_norm).to(device)
+    if args.arch.lower() == "mlp":
+        G = Generator(z_dim, img_dim,
+                    hidden=g_hidden,
+                    act=(args.g_act or "relu"),
+                    use_bn=args.g_bn).to(device)
 
+        D = Discriminator(img_dim,
+                    hidden=d_hidden,
+                    act=(args.d_act or "lrelu"),
+                    use_bn=args.d_bn,
+                    dropout_p=args.d_dropout,
+                    spectral_norm_d=args.spectral_norm).to(device)
+        
+    elif args.arch.lower() == "cnn":
+        G = GeneratorCNN(z_dim, channels, img_size, act=args.g_act, use_bn=args.g_bn).to(device)
+
+        D = DiscriminatorCNN(channels, img_size, act=args.d_act, use_bn=args.d_bn, dropout_p=args.d_dropout, spectral_norm_d=args.spectral_norm).to(device)
 
     betas = args.betas
 
@@ -345,10 +456,11 @@ def train(args):
         folder_name = f"{dataset_name}_e{args.epochs}_b{args.batch}_s{args.seed}"
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        arch_path = args.arch.lower()
         opt_path = args.opt.lower()
         sub_dir = args.save_loc.lower()
 
-        results_dir = os.path.join(project_root, "results", opt_path, sub_dir, folder_name)
+        results_dir = os.path.join(project_root, "results", arch_path, opt_path, sub_dir, folder_name)
         ensure_dir(results_dir)
 
         image_path = os.path.join(results_dir, "final_sample.png")
@@ -477,6 +589,7 @@ if __name__ == "__main__":
     ap.add_argument("--g-bn", action="store_true", help="enable BatchNorm in G")
     ap.add_argument("--d-bn", action="store_true", help="enable BatchNorm in D")
     ap.add_argument("--d-dropout", type=float, default=0.0, help="dropout prob in D (0 to disable)")
+    ap.add_argument("--arch", type=str, default="mlp", choices=["mlp", "cnn"], help="Architecture type: MLP or CNN")
 
     args = ap.parse_args()
     apply_preset(args)
