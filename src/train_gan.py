@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Vanilla GAN (MNIST)
 
-import argparse, os, math, random, time
+import argparse, os, math, random, time, glob
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,6 +22,16 @@ def seed_all(seed=42):
 
 def ensure_dir(p):
     os.makedirs(p, exist_ok=True)
+
+def clear_old_samples(samples_dir="samples", pattern="step_*.png"):
+    #This chunk of code removes old sample images to save disk space.
+    if not os.path.isdir(samples_dir):
+        return
+    for f in glob.glob(os.path.join(samples_dir, pattern)):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
 # helpers for configurable nets:
 def parse_hidden(s, default):
@@ -342,6 +352,10 @@ def train(args):
 
     ensure_dir("samples"); ensure_dir("checkpoints")
 
+    if args.overwrite_samples:
+        clear_old_samples("samples", "step_*.png")
+
+
     # Fixed noise for tracking
     z_fixed = torch.randn(64, z_dim, device=device)
 
@@ -367,6 +381,10 @@ def train(args):
         for xb, _ in dl:
             xb = xb.to(device)  # [-1,1]
             m = xb.size(0)
+
+            #The batch loss should be cleared each iteration
+            losses_D_batch = []
+            losses_G_batch = []
 
             # k steps Discriminator (normally k=1)
             for _ in range(args.k_steps_d):
@@ -405,19 +423,18 @@ def train(args):
 
             losses_G.append(np.mean(losses_G_batch))
 
-            # Logging and samples
+            # Logging and samples                
             if global_step % args.save_every == 0:
                 G.eval()
                 with torch.no_grad():
-                    grid = utils.make_grid(
-                        G(z_fixed).view(*img_shape),
-                        nrow=8, normalize=True, value_range=(-1,1)
-                    )
+                    fake_fixed = G(z_fixed).view(*img_shape)
+                    grid = utils.make_grid(fake_fixed, nrow=8, normalize=True, value_range=(-1,1))
                     out_path = f"samples/step_{global_step:06d}.png"
                     utils.save_image(grid, out_path)
+                    utils.save_image(grid, "samples/latest.png")
                 G.train()
                 print(f"[ep {epoch:02d} | step {global_step}] "
-                    f"lossD={lossD.item():.3f} lossG={lossG.item():.3f} -> {out_path}")
+                      f"lossD={float(lossD):.3f} lossG={float(lossG):.3f} -> {out_path}")    
 
             global_step += 1
 
@@ -575,6 +592,8 @@ if __name__ == "__main__":
     ap.add_argument("--save-every", type=int, default=200)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--cpu", action="store_true")
+    ap.add_argument("--overwrite-samples", action="store_true", help="Deletes step_*.png that already exists in ./samples at the start")
+
     # Regularization arguments
     ap.add_argument("--spectral-norm", action="store_true", help="Use spectral normalization in discriminator")
     ap.add_argument("--instance-noise", type=float, default=0.0, help="Add instance noise to inputs (std, 0 to disable)")
