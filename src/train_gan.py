@@ -242,8 +242,12 @@ def train(args):
     elif args.dataset.lower() == "celeba":
         img_shape = (-1, 3, 64, 64)
 
+    kG = args.k_steps_g if args.k_steps_g is not None else 1
+
     losses_D = []
+    losses_D_batch = []
     losses_G = []
+    losses_G_batch = []
     global_step = 0
 
     print(f"Running with args: {args}")
@@ -253,29 +257,31 @@ def train(args):
             xb = xb.to(device)  # [-1,1]
             m = xb.size(0)
 
-        # k steps Discriminator (normally k=1)
-        for _ in range(args.k_steps_d):
-            z = torch.randn(m, z_dim, device=device)
-            fake = G(z).detach()  # do not update G here
+            # k steps Discriminator (normally k=1)
+            for _ in range(args.k_steps_d):
+                z = torch.randn(m, z_dim, device=device)
+                fake = G(z).detach()  # do not update G here
 
-            # Add instance noise if enabled
-            xb_noisy = add_instance_noise(xb, args.instance_noise)
-            fake_noisy = add_instance_noise(fake, args.instance_noise)
+                # Add instance noise if enabled
+                xb_noisy = add_instance_noise(xb, args.instance_noise)
+                fake_noisy = add_instance_noise(fake, args.instance_noise)
 
-            # D(x): real ~ 1 (with label smoothing)
-            logits_real = D(xb_noisy)
-            y_real = torch.full((m,1), args.real_label, device=device)
-            loss_real = bce(logits_real, y_real)
+                # D(x): real ~ 1 (with label smoothing)
+                logits_real = D(xb_noisy)
+                y_real = torch.full((m,1), args.real_label, device=device)
+                loss_real = bce(logits_real, y_real)
 
-            # D(G(z)): fake ~ 0 (with optional two-sided smoothing)
-            logits_fake = D(fake_noisy)
-            y_fake = torch.full((m,1), args.fake_label, device=device)
-            loss_fake = bce(logits_fake, y_fake)
+                # D(G(z)): fake ~ 0 (with optional two-sided smoothing)
+                logits_fake = D(fake_noisy)
+                y_fake = torch.full((m,1), args.fake_label, device=device)
+                loss_fake = bce(logits_fake, y_fake)
 
-            lossD = loss_real + loss_fake
-            optD.zero_grad(); lossD.backward(); optD.step()
+                lossD = loss_real + loss_fake
+                optD.zero_grad(); lossD.backward(); optD.step()
 
-            kG = args.k_steps_g if args.k_steps_g is not None else 1
+                losses_D_batch.append(lossD.item())
+            
+            losses_D.append(np.mean(losses_D_batch))
 
             for _ in range(kG):
                 z = torch.randn(m, z_dim, device=device)
@@ -284,9 +290,9 @@ def train(args):
                 y_gen = torch.ones(m,1, device=device)
                 lossG = bce(logits_fake, y_gen)
                 optG.zero_grad(); lossG.backward(); optG.step()
+                losses_G_batch.append(lossG.item())
 
-            losses_D.append(lossD.item())
-            losses_G.append(lossG.item())
+            losses_G.append(np.mean(losses_G_batch))
 
             # Logging and samples
             if global_step % args.save_every == 0:
@@ -300,7 +306,7 @@ def train(args):
                     utils.save_image(grid, out_path)
                 G.train()
                 print(f"[ep {epoch:02d} | step {global_step}] "
-                      f"lossD={lossD.item():.3f} lossG={lossG.item():.3f} -> {out_path}")
+                    f"lossD={lossD.item():.3f} lossG={lossG.item():.3f} -> {out_path}")
 
             global_step += 1
 
