@@ -257,6 +257,10 @@ def train(args):
             xb = xb.to(device)  # [-1,1]
             m = xb.size(0)
 
+            #The batch loss should be cleared each iteration
+            losses_D_batch = []
+            losses_G_batch = []
+
             # k steps Discriminator (normally k=1)
             for _ in range(args.k_steps_d):
                 z = torch.randn(m, z_dim, device=device)
@@ -306,7 +310,7 @@ def train(args):
                     utils.save_image(grid, out_path)
                 G.train()
                 print(f"[ep {epoch:02d} | step {global_step}] "
-                    f"lossD={lossD.item():.3f} lossG={lossG.item():.3f} -> {out_path}")
+                    f"lossD={lossD.item()[-1]:.3f} lossG={lossG.item()[-1]:.3f} -> {out_path}")
 
             global_step += 1
 
