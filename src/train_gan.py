@@ -161,8 +161,11 @@ class GeneratorCNN(nn.Module):
             layers += [get_act(act)]
             in_channels = out_channels
 
-        layers += [nn.Upsample(scale_factor=2, mode='nearest')]
-        layers += [nn.Conv2d(64, img_channels, kernel_size=3, padding=1), nn.Tanh()]
+        layers += [nn.Conv2d(64, 32, kernel_size=3, padding=1),
+                   nn.BatchNorm2d(32),
+                   get_act(act),
+                   nn.Conv2d(32, img_channels, kernel_size=3, padding=1),
+                   nn.Tanh()]
 
         self.conv_blocks = nn.Sequential(*layers)
 
@@ -171,8 +174,12 @@ class GeneratorCNN(nn.Module):
     def forward(self, z):
         out = self.fc(z)
         out = out.view(out.size(0), self.init_channels, self.init_size, self.init_size)
+        print(f"After reshape: {out.shape}")
 
-        return self.conv_blocks(out)
+        out = self.conv_blocks(out)
+        print(f"Generator output: {out.shape}")
+
+        return out
 
 class Discriminator(nn.Module):
     def __init__(self, img_dim=28*28, hidden=(512,256),
@@ -327,9 +334,9 @@ def train(args):
                     spectral_norm_d=args.spectral_norm).to(device)
         
     elif args.arch.lower() == "cnn":
-        G = GeneratorCNN(z_dim, channels, img_size, act=args.g_act, use_bn=args.g_bn).to(device)
+        G = GeneratorCNN(z_dim, channels, img_size, act=args.g_act or "relu", use_bn=args.g_bn).to(device)
 
-        D = DiscriminatorCNN(channels, img_size, act=args.d_act, use_bn=args.d_bn, dropout_p=args.d_dropout, spectral_norm_d=args.spectral_norm).to(device)
+        D = DiscriminatorCNN(channels, img_size, act=args.d_act or "lrelu", use_bn=args.d_bn, dropout_p=args.d_dropout, spectral_norm_d=args.spectral_norm).to(device)
 
     betas = args.betas
 
@@ -377,6 +384,8 @@ def train(args):
 
     print(f"Running with args: {args}")
     for epoch in range(1, args.epochs+1):
+        G.train()
+        D.train()
         start_time = time.time()
         for xb, _ in dl:
             xb = xb.to(device)  # [-1,1]
@@ -434,7 +443,7 @@ def train(args):
                     utils.save_image(grid, "samples/latest.png")
                 G.train()
                 print(f"[ep {epoch:02d} | step {global_step}] "
-                      f"lossD={float(lossD):.3f} lossG={float(lossG):.3f} -> {out_path}")    
+                      f"lossD_avg={losses_D[-1]:.3f} lossG_avg={losses_G[-1]:.3f} -> {out_path}")    
 
             global_step += 1
 
@@ -470,7 +479,7 @@ def train(args):
         }.items() if v is not None)
 
         dataset_name = args.dataset if hasattr(args, 'dataset') else 'mnist'
-        folder_name = f"{dataset_name}_e{args.epochs}_b{args.batch}_s{args.seed}"
+        folder_name = f"{dataset_name}_e{args.epochs}_b{args.batch}_lrG{args.lrG}_lrD{args.lrD}_s{args.seed}"
 
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         arch_path = args.arch.lower()
